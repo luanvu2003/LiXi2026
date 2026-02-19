@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vòng Quay Lì Xì 2026 - Bính Ngọ</title>
+    <style>
+        body {
+            background: radial-gradient(circle, #e74c3c, #8e44ad);
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: center;
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh;
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        /* Hiệu ứng nhún nhảy cho linh thú */
+        .mascot {
+            font-size: 3.5em;
+            display: inline-block;
+            margin-bottom: 5px;
+            animation: gallop 0.6s infinite alternate cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            filter: drop-shadow(2px 4px 6px rgba(0,0,0,0.3));
+        }
+
+        @keyframes gallop {
+            0% { transform: translateY(0) rotate(-5deg); }
+            100% { transform: translateY(-15px) rotate(10deg); }
+        }
+
+        /* --- Màn hình Nhập Thông Tin --- */
+        #introScreen {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 25px 20px; 
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #f1c40f;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+            width: 90%; 
+            max-width: 400px;
+            box-sizing: border-box;
+        }
+
+        #introScreen h2 {
+            margin-top: 0;
+            line-height: 1.3;
+            color: #f1c40f;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4);
+            font-size: clamp(1.2em, 5vw, 1.5em); /* Chữ tự động thu nhỏ trên mobile */
+        }
+
+        input, textarea {
+            width: 100%; 
+            padding: 12px; 
+            margin-bottom: 20px;
+            border-radius: 10px; 
+            border: none; 
+            font-size: 1em;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+        
+        textarea { resize: none; height: 80px; }
+
+        button {
+            background: #f1c40f; 
+            color: #d35400; 
+            font-size: 1.1em;
+            font-weight: bold; 
+            padding: 12px 30px; 
+            border: none;
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-transform: uppercase;
+            width: 100%; /* Nút bấm tràn viền trên mobile cho dễ bấm */
+            max-width: 250px;
+        }
+
+        button:hover { 
+            background: #fff; 
+            transform: scale(1.05); 
+        }
+
+        button:disabled {
+            background: #bdc3c7;
+            color: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* --- Màn hình Vòng Quay --- */
+        #gameScreen { 
+            display: none; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        #greetingTitle {
+            font-size: clamp(1.5em, 6vw, 2em);
+            margin-bottom: 5px;
+        }
+        
+        .wheel-container {
+            position: relative;
+            width: 90vw; /* Tự động co giãn theo 90% chiều rộng màn hình */
+            max-width: 350px; /* Không vượt quá 350px trên máy tính */
+            aspect-ratio: 1 / 1; /* Luôn giữ hình tròn hoàn hảo */
+            margin: 30px 0;
+        }
+
+        /* Kim chỉ vòng quay */
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: clamp(15px, 4vw, 20px) solid transparent;
+            border-right: clamp(15px, 4vw, 20px) solid transparent;
+            border-top: clamp(25px, 8vw, 35px) solid #f1c40f;
+            z-index: 10;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.3));
+        }
+
+        /* Vòng quay chính */
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 6px solid #f1c40f;
+            box-sizing: border-box;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+            background: conic-gradient(
+                #c0392b 0deg 60deg,
+                #e74c3c 60deg 120deg,
+                #c0392b 120deg 180deg,
+                #e74c3c 180deg 240deg,
+                #c0392b 240deg 300deg,
+                #e74c3c 300deg 360deg
+            );
+        }
+
+        /* Các ô chữ trên vòng quay */
+        .slice-text {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transform: rotate(calc(60deg * var(--i) + 30deg));
+        }
+
+        .slice-text span {
+            display: inline-block;
+            padding-top: 6%; /* Căn lề tự động theo % vòng quay */
+            font-weight: bold;
+            color: #f1c40f;
+            font-size: clamp(0.9em, 4.5vw, 1.3em); /* Chữ tự thu nhỏ nếu vòng quay nhỏ */
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.6);
+            line-height: 1.2;
+        }
+
+        .envelope-icon { 
+            font-size: clamp(1.2em, 5vw, 1.5em); 
+            display: block; 
+        }
+
+        /* --- Modal Kết quả --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0;
+            width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.85);
+            z-index: 1000; 
+            justify-content: center; 
+            align-items: center;
+        }
+
+        .modal-content {
+            background: #fff; 
+            padding: 25px 20px; 
+            border-radius: 20px;
+            text-align: center; 
+            color: #333; 
+            animation: popIn 0.5s;
+            max-width: 400px; 
+            width: 90%;
+            box-sizing: border-box;
+            border: 5px solid #f1c40f;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #c0392b;
+            line-height: 1.2;
+            font-size: clamp(1.2em, 5vw, 1.5em);
+        }
+
+        .amount-text { 
+            font-size: clamp(2em, 8vw, 2.5em); 
+            color: #d35400; 
+            font-weight: bold; 
+            margin: 10px 0; 
+        }
+
+        .greeting-text {
+            font-size: clamp(1em, 4vw, 1.2em);
+            color: #27ae60;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="introScreen">
+        <div class="mascot">🐎</div>
+        <h2>HAPPY NEW YEAR<br>Xuân Bính Ngọ 2026</h2>
+        
+        <input type="text" id="playerName" placeholder="Nhập tên..." required>
+        <textarea id="playerWish" placeholder="Nhập lời chúc..." required></textarea>
+        <button onclick="startDraw()">Vào Lấy Lì Xì</button>
+    </div>
+
+    <div id="gameScreen">
+        <h1 id="greetingTitle">Lì Xì Cho ...</h1>
+        <p style="margin: 0 0 10px 0; font-size: 0.9em;">Nhấn nút quay để bốc bao lì xì nhé!!</p>
+        
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <div class="wheel" id="wheel">
+                <div class="slice-text" style="--i:0;"><span><span class="envelope-icon">🧧</span>10K</span></div>
+                <div class="slice-text" style="--i:1;"><span><span class="envelope-icon">🧧</span>20K</span></div>
+                <div class="slice-text" style="--i:2;"><span><span class="envelope-icon">🧧</span>50K</span></div>
+                <div class="slice-text" style="--i:3;"><span><span class="envelope-icon">🧧</span>100K</span></div>
+                <div class="slice-text" style="--i:4;"><span><span class="envelope-icon">🧧</span>200K</span></div>
+                <div class="slice-text" style="--i:5;"><span><span class="envelope-icon">🧧</span>500K</span></div>
+            </div>
+        </div>
+
+        <button id="spinBtn" onclick="spinWheel()">QUAY LÌ XÌ</button>
+    </div>
+
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2><div class="mascot" style="font-size: 2em;">🐎</div><br>Chúc mừng năm mới!</h2>
+            
+            <div class="greeting-text" id="customGreeting"></div>
+            <p style="margin-bottom: 5px;">Chúc mừng bạn đã quay trúng bao lì xì trị giá:</p>
+            <div class="amount-text" id="amountDisplay">0 VNĐ</div>
+            <hr style="border: 0; border-top: 1px dashed #ccc; margin: 15px 0;">
+            <p style="font-style: italic; color: #555; font-size: 0.9em;">Lời chúc: <br>"<span id="wishDisplay" style="font-weight: bold; color: #c0392b;"></span>"</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. CẤU HÌNH GOOGLE SHEETS Ở ĐÂY ---
+        const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycby3T5FeWNRsEl8KvZwsiAGF_KmmIYT0NQCIF5IoXLhDLZMP8CgjJ6Cj7_aiASgMMPE/exec'; 
+        
+        // --- 2. CẤU HÌNH TỈ LỆ TRÚNG THƯỞNG (Tổng = 100%) ---
+        const prizes = [
+            { value: 10000,   label: '10K',  chance: 10 }, 
+            { value: 20000,   label: '20K',  chance: 10 }, 
+            { value: 50000,   label: '50K',  chance: 15 }, 
+            { value: 100000,  label: '100K', chance: 20 }, 
+            { value: 200000,  label: '200K', chance: 30 },  
+            { value: 500000,  label: '500K', chance: 15 }   
+        ];
+
+        let userInfo = { name: '', wish: '' };
+        let hasSpun = false; 
+        let currentRotation = 0;
+
+        function startDraw() {
+            const nameInput = document.getElementById('playerName').value.trim();
+            const wishInput = document.getElementById('playerWish').value.trim();
+
+            if (!nameInput || !wishInput) {
+                alert("Em nhớ nhập đủ tên và lời ước nha!");
+                return;
+            }
+
+            userInfo.name = nameInput;
+            userInfo.wish = wishInput;
+
+            document.getElementById('introScreen').style.display = 'none';
+            document.getElementById('gameScreen').style.display = 'flex';
+            document.getElementById('greetingTitle').innerText = `Lì Xì Của ${userInfo.name} 🧧`;
+        }
+
+        function spinWheel() {
+            if (hasSpun) return;
+            hasSpun = true;
+            document.getElementById('spinBtn').disabled = true;
+
+            let rand = Math.random() * 100;
+            let cumulativeChance = 0;
+            let winningIndex = 0;
+
+            for (let i = 0; i < prizes.length; i++) {
+                cumulativeChance += prizes[i].chance;
+                if (rand <= cumulativeChance) {
+                    winningIndex = i;
+                    break;
+                }
+            }
+
+            const winningPrize = prizes[winningIndex];
+            const sliceAngle = 60;
+            const targetAngle = (winningIndex * sliceAngle) + (sliceAngle / 2); 
+            const spinRounds = 360 * 5; 
+            currentRotation += spinRounds + (360 - targetAngle); 
+
+            const wheel = document.getElementById('wheel');
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+            setTimeout(() => {
+                showResult(winningPrize.value);
+                saveToGoogleSheets(userInfo.name, userInfo.wish, winningPrize.value);
+            }, 4200);
+        }
+
+        function showResult(amount) {
+            document.getElementById('customGreeting').innerText = `Tuyệt vời, ${userInfo.name}!`;
+            document.getElementById('amountDisplay').innerText = amount.toLocaleString('vi-VN') + ' VNĐ';
+            
+            const loiChucCuaToi = `Năm mới 2026 chúc ${userInfo.name} luôn vui vẻ, mạnh khỏe, thành công trong học tập và cả trong công việc, vạn sự như ý nhé!`;
+            
+            document.getElementById('wishDisplay').innerText = loiChucCuaToi;
+            document.getElementById('resultModal').style.display = 'flex';
+        }
+
+        async function saveToGoogleSheets(name, wish, amount) {
+            const data = {
+                name: name,
+                wish: wish,
+                amount: amount
+            };
+
+            try {
+                await fetch(GOOGLE_SHEETS_API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+                });
+                console.log("Đã gửi dữ liệu về Google Sheets!");
+            } catch (err) {
+                console.error("Lỗi gửi dữ liệu:", err);
+            }
+        }
+    </script>
+</body>
+</html>
